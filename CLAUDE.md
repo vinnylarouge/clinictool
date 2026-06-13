@@ -27,8 +27,9 @@ docs/02-architecture.md  entity spine, constraint algebra, synthesis, storage
 docs/03-regulatory.md    the device boundary, clinical safety, IP, data protection
 docs/04-spike-plan.md    ten evening-blocks to a demo and a go/no-go memo
 docs/05-open-questions.md  threads requiring a human decision
+docs/06-field-test.md  IRL clinician test protocol (block 12), with capture sheet
 docs/decision-log.md     dated decisions with rejected alternatives
-src/                 (empty until spike day 1)
+src/                 typed core slice (model, eval, render, fixtures, cli)
 data/                gitignored; raw source documents with content hashes
 ```
 
