@@ -39,6 +39,7 @@ data/                gitignored; raw source documents with content hashes
 - DuckDB for the entity spine and constraint store; raw documents kept as files with SHA-256 content hashes in `data/raw/`.
 - Parsing: lxml/selectolax for dm+d XML; pdfplumber or pymupdf for SPC PDFs where HTML is unavailable.
 - v0 UI is a single static HTML render (Jinja template) per case. No framework until the matrix view earns one.
+- Model seam is OpenAI-API-compatible (`src/pullback/llm/`), configured via `PULLBACK_LLM_*` env vars, defaulting to a localhost endpoint. Speaks to local runtimes (Ollama, llama.cpp, LM Studio, vLLM) or hosted providers. The narrative-handling parser is hard-guarded to local-only hosts (invariant 4; decision-log D7).
 - Tests: pytest; golden-file tests on constraint extraction per drug.
 
 ## Conventions
