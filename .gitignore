@@ -1,0 +1,11 @@
+data/raw/
+data/*.duckdb
+__pycache__/
+.venv/
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.coverage
+# Rendered demo output (re-derivable from fixtures)
+out/
