@@ -9,3 +9,6 @@ dist/
 .coverage
 # Rendered demo output (re-derivable from fixtures)
 out/
+# Local AI provider config (may hold an API key); never commit
+.pullback/
+*.config.json
