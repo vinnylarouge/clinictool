@@ -9,3 +9,4 @@ dist/
 .coverage
 # Rendered demo output (re-derivable from fixtures)
 out/
+.env
