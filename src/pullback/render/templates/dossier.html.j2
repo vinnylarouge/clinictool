@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pullback dossier: {{ case.alias }}</title>
+<style>
+  :root {
+    --regulator: #0b3d91; --formulary: #5a2d82; --specialist: #1b6b50; --research: #8a6d00;
+    --fired: #b00020; --clear: #1b6b50; --pending: #8a6d00; --unreported: #888;
+    --line: #d9d9d9; --bg: #fafafa; --card: #fff;
+  }
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+         margin: 0; padding: 0 0 4rem; color: #1a1a1a; background: var(--bg); line-height: 1.4; }
+  header { background: var(--card); border-bottom: 2px solid var(--line); padding: 1rem 1.5rem; }
+  h1 { font-size: 1.25rem; margin: 0 0 .25rem; }
+  .sub { color: #555; font-size: .85rem; }
+  .banner { padding: .6rem 1rem; font-size: .85rem; border-radius: 4px; margin: .5rem 1.5rem 0; }
+  .banner.disclaimer { background: #eef3fb; border: 1px solid #c4d6f0; }
+  .banner.fixture { background: #fff4e5; border: 1px solid #f0d9a8; }
+  .banner.diff { background: #fdeaea; border: 1px solid #f0bcbc; }
+  .banner.stale { background: #f3f3f3; border: 1px solid var(--line); }
+  .casebar { display: flex; flex-wrap: wrap; gap: .4rem .9rem; margin: .6rem 1.5rem 0;
+             font-size: .85rem; }
+  .facet { background: #f0f0f0; border-radius: 3px; padding: .1rem .45rem; }
+  .facet b { font-weight: 600; }
+  main { padding: 1rem 1.5rem; }
+  table { border-collapse: collapse; width: 100%; background: var(--card); }
+  th, td { border: 1px solid var(--line); vertical-align: top; padding: .55rem .6rem;
+           text-align: left; }
+  th.axis, td.axis { width: 9rem; font-weight: 600; background: #f4f4f4; text-transform: capitalize; }
+  thead th { background: #eef0f2; position: sticky; top: 0; }
+  .drugname { font-size: 1rem; }
+  .cell.findings { }
+  .cell.changed { outline: 2px solid var(--fired); outline-offset: -2px; }
+  .finding { border-left: 3px solid var(--line); padding: .25rem 0 .5rem .55rem; margin-bottom: .55rem; }
+  .finding:last-child { margin-bottom: 0; }
+  .finding.alt { border-left-color: var(--specialist); }
+  .quote { font-style: normal; }
+  .quote::before { content: "\201C"; } .quote::after { content: "\201D"; }
+  .mechfact { color: var(--fired); font-size: .82rem; margin-top: .25rem; }
+  .mechfact::before { content: "case fact: "; color: #555; font-style: italic; }
+  .meta { font-size: .72rem; color: #555; margin-top: .3rem; }
+  .badge { display: inline-block; font-size: .68rem; padding: .03rem .35rem; border-radius: 3px;
+           color: #fff; margin-right: .3rem; vertical-align: middle; }
+  .badge.Regulator { background: var(--regulator); }
+  .badge.Formulary { background: var(--formulary); }
+  .badge.Specialist { background: var(--specialist); }
+  .badge.Research { background: var(--research); }
+  .conv { display: inline-block; font-size: .68rem; padding: .03rem .35rem; border-radius: 3px;
+          background: #ffe9c7; color: #6a4a00; margin-left: .2rem; }
+  .altlabel { display: inline-block; font-size: .68rem; padding: .03rem .35rem; border-radius: 3px;
+              background: #e3f0ea; color: var(--specialist); margin-left: .2rem; }
+  .altlabel.mech { background: #f0f0f0; color: #555; }
+  a { color: var(--regulator); }
+  .state { font-size: .82rem; }
+  .state.checked_clear { color: var(--clear); }
+  .state.pending { color: var(--pending); }
+  .state.unreported { color: var(--unreported); }
+  .state .dot { font-weight: 700; }
+  .alts { margin-top: 1.2rem; background: var(--card); border: 1px solid var(--line);
+          border-radius: 4px; padding: .8rem 1rem; }
+  .alts h2 { font-size: 1rem; margin: 0 0 .4rem; }
+  .alts .note { font-size: .8rem; color: #555; margin-bottom: .6rem; }
+  footer { margin: 1.2rem 1.5rem 0; font-size: .8rem; color: #555; border-top: 1px solid var(--line);
+           padding-top: .7rem; }
+  .oldest { font-weight: 600; color: #1a1a1a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>pullback dossier &middot; {{ case.alias }}</h1>
+  <div class="sub">
+    case {{ case.case_id }} v{{ case.case_version }} &middot;
+    dossier {{ dossier.dossier_id }} &middot;
+    corpus snapshot {{ dossier.corpus_snapshot_id }} &middot;
+    derived {{ dossier.derived_at.isoformat() }}
+  </div>
+</header>
+
+<div class="banner disclaimer">{{ disclaimer }}</div>
+{% if fixture_data %}
+<div class="banner fixture">
+  <b>Illustrative fixture data.</b> Some cited documents in this render are
+  placeholders, not the authoritative dm+d spine or ingested SPC corpus (spike
+  blocks 1 and 4 wire those in). Span text and dm+d codes here are for
+  demonstration only and must not be relied on clinically.
+</div>
+{% endif %}
+{% if has_diff %}
+<div class="banner diff">
+  <b>Changed since last review.</b> {{ diff.changed | length }} cell(s) changed.
+  Cells outlined in red below differ from the reviewed baseline.
+</div>
+{% endif %}
+
+<div class="casebar">
+  {% if case.age_years is not none %}<span class="facet"><b>age</b> {{ case.age_years }}</span>{% endif %}
+  <span class="facet"><b>sex</b> {{ case.sex.value }}</span>
+  {% if case.weight_kg is not none %}<span class="facet"><b>weight</b> {{ case.weight_kg }} kg</span>{% endif %}
+  {% if case.egfr is not none %}<span class="facet"><b>eGFR</b> {{ case.egfr }} mL/min/1.73m2</span>{% endif %}
+  {% if case.crcl is not none %}<span class="facet"><b>CrCl</b> {{ case.crcl }} mL/min</span>{% endif %}
+  <span class="facet"><b>hepatic</b> {{ case.hepatic.value }}</span>
+  {% if case.pregnant is not none %}<span class="facet"><b>pregnant</b> {{ "yes" if case.pregnant else "no" }}</span>{% endif %}
+  {% for m in case.co_meds %}<span class="facet"><b>co-med</b> {{ m.name }}</span>{% endfor %}
+</div>
+{% if case.egfr is not none and case.crcl is not none %}
+<div class="banner stale">
+  Renal function is shown in both conventions and never auto-converted: eGFR
+  {{ case.egfr }} (CKD-EPI) and CrCl {{ case.crcl }} (Cockcroft-Gault). Each
+  source's threshold fires against the convention that source states.
+</div>
+{% endif %}
+
+<main>
+<table>
+  <thead>
+    <tr>
+      <th class="axis">axis</th>
+      {% for drug in drugs %}<th class="drugname">{{ drug.name }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="axis">{{ row.axis_label }}</td>
+      {% for cell in row.cells %}
+      <td class="cell {{ cell.state }}{% if cell.changed %} changed{% endif %}">
+        {% if cell.state == "findings" %}
+          {% for c in cell.constraints %}
+          <div class="finding{% if c.is_alternative %} alt{% endif %}">
+            <span class="badge {{ c.authority }}">{{ c.authority }}</span>
+            {% if c.is_alternative %}
+              {% if c.is_mechanical_alt %}
+                <span class="altlabel mech">alternative &middot; mechanical</span>
+              {% else %}
+                <span class="altlabel">alternative &middot; attested</span>
+              {% endif %}
+            {% endif %}
+            {% if c.convention %}<span class="conv">{{ c.convention }}</span>{% endif %}
+            {% if c.payload.kind == "span" %}
+              <div class="quote">{{ c.payload.text }}</div>
+            {% elif c.payload.kind == "rule" %}
+              <div><b>{{ c.payload.label }}</b>: <span class="quote">{{ c.payload.text }}</span></div>
+            {% elif c.payload.kind == "linkout" %}
+              <div><a href="{{ c.payload.url }}" target="_blank" rel="noopener">{{ c.payload.label }}</a>
+                {% if c.payload.note %}<span class="meta">{{ c.payload.note }}</span>{% endif %}</div>
+            {% endif %}
+            {% if c.fired_explanation and c.fired_explanation != "unconditional" %}
+              <div class="mechfact">{{ c.fired_explanation }}</div>
+            {% endif %}
+            <div class="meta">
+              <a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.source }}</a>
+              &middot; {{ c.locator }} &middot; {{ c.version }} &middot; retrieved {{ c.retrieved_at }}
+            </div>
+          </div>
+          {% endfor %}
+        {% elif cell.state == "checked_clear" %}
+          <div class="state checked_clear"><span class="dot">&#10003;</span>
+            checked, no constraint ({{ cell.checked_sources | join(", ") }})</div>
+        {% elif cell.state == "pending" %}
+          <div class="state pending"><span class="dot">&#8230;</span>
+            checking ({{ cell.pending_sources | join(", ") }})</div>
+        {% else %}
+          <div class="state unreported"><span class="dot">&minus;</span> not yet checked</div>
+        {% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if alternatives %}
+<div class="alts">
+  <h2>Attested alternatives</h2>
+  <div class="note">
+    Shown only where a source attests the adjacency or a mechanical class relation
+    is displayed and labelled as such. Not ranked, not preferred, not advice.
+  </div>
+  {% for alt in alternatives %}
+  <div class="finding{% if alt.is_mechanical %}{% else %} alt{% endif %}">
+    <b>{{ alt.drug.name }}</b>
+    {% if alt.is_mechanical %}<span class="altlabel mech">mechanical</span>
+    {% else %}<span class="altlabel">source-attested</span>{% endif %}
+    <span class="badge {{ {1:'Regulator',2:'Formulary',3:'Specialist',4:'Research'}[alt.attestation.authority.value] }}">{{ {1:'Regulator',2:'Formulary',3:'Specialist',4:'Research'}[alt.attestation.authority.value] }}</span>
+    <div class="meta">
+      <a href="{{ alt.attestation.provenance.url }}" target="_blank" rel="noopener">{{ alt.attestation.provenance.source }}</a>
+      &middot; {{ alt.attestation.provenance.locator }} &middot; retrieved {{ alt.attestation.provenance.retrieved_at.isoformat() }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+</main>
+
+<footer>
+  <div>Oldest retrieval among cited sources: <span class="oldest">{{ dossier.oldest_retrieval.isoformat() }}</span>.</div>
+  <div>{{ disclaimer }}</div>
+</footer>
+</body>
+</html>

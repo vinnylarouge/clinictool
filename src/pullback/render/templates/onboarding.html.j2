@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Welcome to pullback</title>
+<style>
+  :root { --ink:#1a1a1a; --regulator:#0b3d91; --specialist:#1b6b50; --fired:#b00020;
+          --line:#d9d9d9; --bg:#f6f7f9; --card:#fff; --muted:#555; }
+  * { box-sizing: border-box; }
+  body { font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0;
+         color:var(--ink); background:var(--bg); line-height:1.5; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+  h1 { font-size: 1.6rem; margin: .2rem 0 .1rem; }
+  .tag { color: var(--muted); font-size: 1rem; margin-bottom: 1rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px;
+          padding:1.1rem 1.25rem; margin: 1rem 0; }
+  h2 { font-size: 1.1rem; margin: 0 0 .6rem; }
+  ol.steps { margin:0; padding-left: 1.2rem; }
+  ol.steps > li { margin-bottom: .8rem; }
+  ol.steps b { display:block; }
+  .legend { display:grid; grid-template-columns: auto 1fr; gap:.35rem .7rem; font-size:.92rem;
+            margin-top:.4rem; }
+  .legend .k { font-weight:600; white-space:nowrap; }
+  .pill { display:inline-block; font-size:.72rem; padding:.05rem .4rem; border-radius:3px;
+          color:#fff; vertical-align:middle; }
+  .pill.reg{background:var(--regulator);} .pill.spec{background:var(--specialist);}
+  .disclaimer { background:#eef3fb; border:1px solid #c4d6f0; border-radius:6px;
+                padding:.65rem .8rem; font-size:.88rem; }
+  .providers { display:flex; flex-direction:column; gap:.6rem; }
+  label.prov { display:block; border:1px solid var(--line); border-radius:6px; padding:.7rem .85rem;
+               cursor:pointer; }
+  label.prov.sel { border-color:var(--regulator); box-shadow:0 0 0 1px var(--regulator) inset; }
+  label.prov .name { font-weight:600; }
+  label.prov .note { font-size:.85rem; color:var(--muted); margin-top:.2rem; }
+  .field { margin-top:.8rem; }
+  .field label { display:block; font-size:.85rem; font-weight:600; margin-bottom:.2rem; }
+  .field input { width:100%; padding:.5rem .6rem; border:1px solid var(--line); border-radius:5px;
+                 font-size:.95rem; font-family:inherit; }
+  .hint { font-size:.78rem; color:var(--muted); margin-top:.2rem; }
+  details.adv { margin-top:.7rem; } details.adv summary { cursor:pointer; font-size:.85rem; color:var(--muted); }
+  button { margin-top:1rem; background:var(--regulator); color:#fff; border:0; border-radius:6px;
+           padding:.65rem 1.1rem; font-size:1rem; cursor:pointer; }
+  .err { background:#fdeaea; border:1px solid #f0bcbc; border-radius:6px; padding:.6rem .8rem;
+         font-size:.9rem; color:var(--fired); margin-bottom:.8rem; }
+  .ok { background:#e9f6ef; border:1px solid #b9e2cd; border-radius:6px; padding:.9rem 1rem; }
+  .ok h2 { color: var(--specialist); }
+  code { background:#f0f0f0; padding:.05rem .3rem; border-radius:3px; font-size:.9em; }
+  .static-note { background:#fff4e5; border:1px solid #f0d9a8; border-radius:6px; padding:.6rem .8rem;
+                 font-size:.85rem; margin-bottom:.8rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Welcome to pullback</h1>
+  <div class="tag">A research secretary for medication suitability. It researches, cites, and notices changes across the UK medicines sources. It never decides; you do.</div>
+
+  <div class="card disclaimer">{{ disclaimer }}</div>
+
+  {% if saved %}
+  <div class="card ok">
+    <h2>&#10003; You are set up</h2>
+    <p>Saved <b>{{ saved_provider }}</b> as your AI provider.</p>
+    <p>Configuration written to <code>{{ config_path }}</code>{% if masked_key %} (API key {{ masked_key }}, stored readable only by you){% endif %}.</p>
+    <p>You can close this tab. Next, build a dossier from a case. During the current spike you can see the worked example with <code>pullback render-flagship</code>.</p>
+  </div>
+  {% else %}
+
+  <div class="card">
+    <h2>How you will use it</h2>
+    <ol class="steps">
+      <li><b>1. Paste the patient's history in plain words.</b>
+        However it arrives: a paragraph, your shorthand, dictated notes. It stays on this device. You do not fill in a form.</li>
+      <li><b>2. Check what we read.</b>
+        pullback turns the text into coded facts (age, kidney function, the medicines, the conditions) and shows them back. Confirm or correct before anything is looked up. Anything it cannot read is flagged "please confirm", never guessed. It never infers judgements like "frail" or "high risk"; that stays with you.</li>
+      <li><b>3. Read the dossier.</b>
+        One screen: the candidate drug (or two, side by side) across the top, the topics (kidney dosing, interactions, heart-rhythm risk, pregnancy, supply, and so on) down the side. Every cell is either a cited source statement or an explicit blank.</li>
+    </ol>
+    <h2 style="margin-top:1rem;">Reading a cell</h2>
+    <div class="legend">
+      <div class="k"><span class="pill reg">Regulator</span> <span class="pill spec">Specialist</span></div>
+      <div>A badge says which kind of source this is. The system never ranks sources against each other; it shows you each.</div>
+      <div class="k">Citation + date</div>
+      <div>Every statement carries its source, location, and retrieval date, and links to the original. If it is not cited, it does not appear.</div>
+      <div class="k">Flagged finding</div>
+      <div>Where something applies to this patient, the source's own words sit beside the mechanical fact about your patient that tripped it (for example "case CrCl 22 mL/min &lt; 30"). Two separately cited statements, side by side. The system does not join them into a verdict.</div>
+      <div class="k">Checked vs not yet checked</div>
+      <div>A cell that says "checked, no constraint" means a source looked and found nothing. A cell that says "not yet checked" means nothing has looked, so it is <b>not</b> a clear. These look different on purpose.</div>
+      <div class="k">Alternatives</div>
+      <div>Another drug appears only when a source names it in context, or as a labelled mechanical class relation. Never ranked, never "use this instead". It is a pointer to read, not advice.</div>
+      <div class="k">Freshness</div>
+      <div>The footer shows the oldest retrieval date among the citations, so you always know how current the dossier is. When a source changes, the dossier flags what changed since you last reviewed it.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Choose your AI</h2>
+    <p class="hint">pullback uses a language model to read free-text history and to route its searches. Pick one. You can change it later by running setup again.</p>
+
+    {% if not interactive %}
+    <div class="static-note">This is a preview. To save your choice and key, run <code>pullback setup</code> in a terminal; it opens this page able to save.</div>
+    {% endif %}
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+    <form method="POST" action="/save">
+      <div class="providers">
+        {% for p in providers %}
+        <label class="prov{% if p.key == selected_provider %} sel{% endif %}" id="lbl-{{ p.key }}">
+          <input type="radio" name="provider" value="{{ p.key }}"
+                 {% if p.key == selected_provider %}checked{% endif %}
+                 onclick="selectProvider('{{ p.key }}')">
+          <span class="name">{{ p.label }}</span>
+          <div class="note">{{ p.data_note }}</div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="field" id="keyfield">
+        <label for="api_key">API key</label>
+        <input type="password" id="api_key" name="api_key" autocomplete="off"
+               placeholder="sk-..." value="{{ form.get('api_key', '') }}">
+        <div class="hint" id="keyhint"></div>
+      </div>
+
+      <details class="adv">
+        <summary>Advanced (endpoint and model)</summary>
+        <div class="field">
+          <label for="base_url">Base URL</label>
+          <input type="text" id="base_url" name="base_url" value="{{ form.get('base_url', '') }}">
+        </div>
+        <div class="field">
+          <label for="model">Model</label>
+          <input type="text" id="model" name="model" value="{{ form.get('model', '') }}">
+        </div>
+        <div class="hint">Leave blank to use the provider's defaults.</div>
+      </details>
+
+      <button type="submit"{% if not interactive %} disabled title="Run pullback setup to enable saving"{% endif %}>Save and continue</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="tag" style="margin-top:1.5rem; font-size:.82rem;">{{ disclaimer }}</div>
+</div>
+
+<script>
+  // Provider presets, mirrored from llm/providers.py, for live defaults and the
+  // key field. No external assets; this is the only script and it is inline.
+  var PRESETS = {
+    {% for p in providers %}"{{ p.key }}": {
+      requiresKey: {{ 'true' if p.requires_key else 'false' }},
+      baseUrl: "{{ p.base_url }}",
+      model: "{{ p.model }}",
+      label: "{{ p.label }}"
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  };
+  function selectProvider(key) {
+    {% for p in providers %}document.getElementById("lbl-{{ p.key }}").classList.toggle("sel", key === "{{ p.key }}");{% endfor %}
+    var preset = PRESETS[key];
+    var keyfield = document.getElementById("keyfield");
+    var keyhint = document.getElementById("keyhint");
+    keyfield.style.display = preset.requiresKey ? "block" : "none";
+    keyhint.textContent = preset.requiresKey
+      ? "Your key is stored on this device only, readable only by you."
+      : "";
+    // Prefill endpoint and model defaults only if the user has not typed them.
+    var bu = document.getElementById("base_url"), md = document.getElementById("model");
+    if (!bu.value) bu.placeholder = preset.baseUrl;
+    if (!md.value) md.placeholder = preset.model;
+  }
+  // Initialise on load.
+  document.addEventListener("DOMContentLoaded", function () {
+    var checked = document.querySelector('input[name=provider]:checked');
+    if (checked) selectProvider(checked.value);
+  });
+</script>
+</body>
+</html>
