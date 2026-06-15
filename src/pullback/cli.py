@@ -37,6 +37,28 @@ def _cmd_render_flagship(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_setup(args: argparse.Namespace) -> int:
+    from pullback.app.wizard import run_wizard
+
+    path = run_wizard(open_browser=not args.no_browser)
+    if path is None:
+        print("No configuration saved.", file=sys.stderr)
+        return 1
+    print(f"Saved AI configuration to {path}.")
+    return 0
+
+
+def _cmd_welcome(args: argparse.Namespace) -> int:
+    from pullback.render.onboarding import render_onboarding
+
+    html = render_onboarding(interactive=False)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(html, encoding="utf-8")
+    print(f"Wrote the walkthrough to {out}. Run 'pullback setup' to save your AI provider.")
+    return 0
+
+
 _PENDING = {
     "ingest": "block 4 (SPC acquisition): needs manual SPC downloads from emc/MHRA.",
     "build-tree": "block 5 (section tree): needs the ingested SPC corpus.",
@@ -54,6 +76,22 @@ def _cmd_pending(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pullback", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p_setup = sub.add_parser(
+        "setup", help="open the intro wizard to choose an AI provider and save your API key"
+    )
+    p_setup.add_argument(
+        "--no-browser", action="store_true", help="do not open a browser automatically"
+    )
+    p_setup.set_defaults(func=_cmd_setup)
+
+    p_welcome = sub.add_parser(
+        "welcome", help="export the walkthrough page to HTML (read-only preview)"
+    )
+    p_welcome.add_argument(
+        "--out", default="out/welcome.html", help="output HTML path (default: out/welcome.html)"
+    )
+    p_welcome.set_defaults(func=_cmd_welcome)
 
     p_render = sub.add_parser(
         "render-flagship", help="render the flagship dossier from fixtures to HTML"

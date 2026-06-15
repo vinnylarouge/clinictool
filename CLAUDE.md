@@ -27,8 +27,9 @@ docs/02-architecture.md  entity spine, constraint algebra, synthesis, storage
 docs/03-regulatory.md    the device boundary, clinical safety, IP, data protection
 docs/04-spike-plan.md    ten evening-blocks to a demo and a go/no-go memo
 docs/05-open-questions.md  threads requiring a human decision
+docs/06-field-test.md  IRL clinician test protocol (block 12), with capture sheet
 docs/decision-log.md     dated decisions with rejected alternatives
-src/                 (empty until spike day 1)
+src/                 typed core slice (model, eval, render, fixtures, cli)
 data/                gitignored; raw source documents with content hashes
 ```
 
@@ -38,6 +39,7 @@ data/                gitignored; raw source documents with content hashes
 - DuckDB for the entity spine and constraint store; raw documents kept as files with SHA-256 content hashes in `data/raw/`.
 - Parsing: lxml/selectolax for dm+d XML; pdfplumber or pymupdf for SPC PDFs where HTML is unavailable.
 - v0 UI is a single static HTML render (Jinja template) per case. No framework until the matrix view earns one.
+- Model seam is OpenAI-API-compatible (`src/pullback/llm/`), configured via `PULLBACK_LLM_*` env vars, defaulting to a localhost endpoint. Speaks to local runtimes (Ollama, llama.cpp, LM Studio, vLLM) or hosted providers. The narrative-handling parser is hard-guarded to local-only hosts (invariant 4; decision-log D7).
 - Tests: pytest; golden-file tests on constraint extraction per drug.
 
 ## Conventions
@@ -49,7 +51,7 @@ data/                gitignored; raw source documents with content hashes
 
 ## Current phase
 
-**Typed core slice in place; gated data sources not yet wired.** The domain model (`src/pullback/model/`), guard engine, evaluator, attested-alternatives rule, dossier diff, and Jinja matrix renderer are implemented and tested (`uv run pytest`, 39 tests). The flagship dossier renders end to end from an in-repo fixture corpus: `uv run pullback render-flagship` writes `out/flagship.html`. The fixtures are illustrative placeholders (clearly marked, with an honesty banner in the render), standing in only where gated sources are needed (decision-log D6).
+**Typed core slice in place; gated data sources not yet wired.** The domain model (`src/pullback/model/`), guard engine, evaluator, attested-alternatives rule, dossier diff, OpenAI-compatible model seam (`src/pullback/llm/`), local config store, intro wizard, and Jinja matrix renderer are implemented and tested (`uv run pytest`, 70 tests). The flagship dossier renders end to end from an in-repo fixture corpus: `uv run pullback render-flagship` writes `out/flagship.html`. First-run onboarding and AI-provider setup is `uv run pullback setup` (a localhost wizard; decision-log D8). The fixtures are illustrative placeholders (clearly marked, with an honesty banner in the render), standing in only where gated sources are needed (decision-log D6).
 
 Next concrete action: TRUD account registration and dm+d download (docs/04-spike-plan.md, block 1), then SPC acquisition (block 4). Real adapters emit the same `Constraint` objects into the same `Corpus` seam, so the evaluator and renderer do not change. Before writing ingestion code for any source, re-read its row in docs/01-sources.md and confirm the access route is still accurate.
 
